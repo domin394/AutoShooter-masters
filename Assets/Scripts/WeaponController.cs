@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class WeaponController : MonoBehaviour
@@ -10,22 +11,65 @@ public class WeaponController : MonoBehaviour
     //transform gracza
     Transform player;
 
+    //prefab pocisku
+    public GameObject projectilePrefab;
+
+    //spawn pocisku
+    Transform projectileSpawn;
+
+    //czestotliwosc strzalu (/sek)
+    public float rateOfFire = 1;
+    //czas od ostatniego wystrzalu
+    float timeSinceLastFire = 0;
+
+    //moc wystrza³u (prêdkoœc pocz¹tkowa)
+    public float projectileForce = 20;
+
     // Start is called before the first frame update
     void Start()
     {
         // pozycja gracza
         player = GameObject.FindWithTag("Player").transform;
+
+        //znajdz w hierarchii obieku miejsce z ktorego staruje pocisk
+        projectileSpawn = transform.Find("ProjectileSpawn").transform;
     }
 
     // Update is called once per frame
     void Update()
     {
         Transform target = TagTargeter("Enemy");
-        if(target != transform) 
+        if (target != transform)
         {
-            Debug.Log("Celuje do: " + target.gameObject.name);
+            //Debug.Log("Celuje do: " + target.gameObject.name);
             transform.LookAt(target.position + Vector3.up);
+
+            //wystrzel pocisk
+            //jeœli minê³o wiêcej od ostatniego strza³u ni¿ wskazuje na to prêdkoœæ strzelania
+            if (timeSinceLastFire > rateOfFire)
+            {
+                //stworz pocisk
+                GameObject projectile = Instantiate(projectilePrefab, projectileSpawn.position, Quaternion.identity);
+
+                
+                //znajdz rrigidbody dla pocisku
+                Rigidbody projectileRB = projectile.GetComponent<Rigidbody>();
+                //"popchnij" pocisk do przodu
+                //sila dziala w kierunku przodu dzia³a (pojectilespawn.z) * si³a wystrza³u
+                projectileRB.AddForce(projectileSpawn.transform.forward * projectileForce, ForceMode.VelocityChange);
+
+                //je¿eli strzelisz to wyzeruj czas 
+                timeSinceLastFire = 0;
+
+                //zniszcz pocisk po 5 sekundach
+                Destroy(projectile, 5);
+            }
+            else
+            {
+                timeSinceLastFire += Time.deltaTime;
+            }
         }
+
     }
     Transform TagTargeter(string tag)
     {
@@ -97,7 +141,7 @@ public class WeaponController : MonoBehaviour
         }
 
         //do celów testowych
-        Debug.Log("Celuje do: " + target.gameObject.name);
+        //Debug.Log("Celuje do: " + target.gameObject.name);
 
         return target;
     }
